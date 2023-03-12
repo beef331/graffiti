@@ -21,16 +21,20 @@ for line in execCmdEx(tagListCommand % parent).output.splitLines:
   if line.startsWith("v"):
     versions.incl line[1..^1].strip()
 
+proc getCommitMessage(line: string): string =
+  result = "\""
+  let messageStart = line.find " "
+  result.add:
+    if messageStart > 0:
+      quoteShell(line[messageStart + 1 .. ^1])
+    else:
+      "Automated Git Tag"
+  result.add "\""
+
 for line in commits.output.splitLines:
   var commit: string
   if line.scanF("$+ ", commit):
-    let
-      messageStart = line.find " "
-      message =
-        if messageStart > 0:
-          quoteShell(line[messageStart + 1 .. ^1])
-        else:
-          "Automated Git Tag"
+    let message = getCommitMessage(line)
     let diff = execCmdEx(diffCommand % [parent, commit, nimbleFile])
     for line in diff.output.splitLines:
       var version: string

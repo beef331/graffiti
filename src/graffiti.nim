@@ -1,10 +1,10 @@
-import std/[osproc, strutils, os, sequtils, algorithm, sets, strscans]
+import std/[osproc, strutils, os, sequtils, algorithm, sets, strscans, strformat]
 
 const 
   gitCommand = "git -C $1 log --format=oneline -- $2"
   diffCommand = "git -C $1 diff $2~ $2 $3"
   tagCommand = "git -C $1 tag -a v$2 $3 -m \"$4\""
-  pushCommand = "git -C $1 push origin v$2"
+  pushCommand = "git -C $1 push --tags"
   tagListCommand = "git -C $1 tag"
 
 assert paramCount() == 1
@@ -31,6 +31,8 @@ proc getCommitMessage(line: string): string =
       "Automated Git Tag"
   result.add "\""
 
+let startSize = versions.len
+
 for line in commits.output.splitLines:
   var commit: string
   if line.scanF("$+ ", commit):
@@ -42,7 +44,10 @@ for line in commits.output.splitLines:
         let start = line.rFind("=")
         if line[start+1..^1].scanf("$s\"$+\"", version) and version notin versions:
           discard execShellCmd(tagCommand % [parent, version, commit, message])
-          discard execShellCmd(pushCommand % [parent, version])
           versions.incl version
+
+if startSize != versions.len:
+  echo fmt"Created new tags for {versions.len - startSize} versions. Pushing now"
+  discard execShellCmd(pushCommand % parent)
 
 

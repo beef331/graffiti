@@ -9,8 +9,6 @@ Usage is simple:
 nimble install https://github.com/beef331/graffiti.git
 ## create tags
 graffiti some_project/some_project.nimble
-## push git tags
-cd some_project/ && git push --tags
 ```
 
 ## Testimonials

@@ -11,6 +11,8 @@ nimble install https://github.com/beef331/graffiti.git
 graffiti some_project/some_project.nimble
 ```
 
+If the first commit of the repository includes the nimble file the very first version will not be automatically tagged.
+
 ## Testimonials
 
 @elcritch said "I give this utility 2 thumbs up. It saved me from typing 178 characters just today! But now the two users who use my libs can rest well knowing my repos are now tagged for their Nimble convenience."

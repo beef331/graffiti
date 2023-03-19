@@ -1,7 +1,7 @@
 import std/[osproc, strutils, os, sequtils, algorithm, sets, strscans, strformat]
 
 const 
-  gitCommand = "git -C $1 log --format=oneline -- $2"
+  gitCommand = "git -C $1 log --format=\"%H %s\" -- $2"
   diffCommand = "git -C $1 diff $2~ $2 $3"
   tagCommand = "git -C $1 tag -a v$2 $3 -m \"$4\""
   pushCommand = "git -C $1 push --tags"
@@ -33,18 +33,18 @@ proc getCommitMessage(line: string): string =
 
 let startSize = versions.len
 
-for line in commits.output.splitLines:
+for commitLine in commits.output.splitLines:
   var commit: string
-  if line.scanF("$+ ", commit):
-    let message = getCommitMessage(line)
+  if commitLine.scanF("$+ ", commit):
     let diff = execCmdEx(diffCommand % [parent, commit, nimbleFile])
     for line in diff.output.splitLines:
       var version: string
       if line.startswith("+version"):
         let start = line.rFind("=")
         if line[start+1..^1].scanf("$s\"$+\"", version) and version notin versions:
+          let message = getCommitMessage(commitLine)
           discard execShellCmd(tagCommand % [parent, version, commit, message])
-          echo "Created Version: ", version, ", with message: ", message
+          echo "Created Version: ", version, ", with message: ", message[1..^2]
           versions.incl version
 
 if startSize != versions.len:

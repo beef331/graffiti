@@ -13,7 +13,7 @@ let
   path = paramStr(1)
   parent = path.parentDir()
   nimbleFile = path.splitPath.tail
-  commits = execCmdEx(gitCommand % [parent, nimbleFile], options = {poEchoCmd})
+  commits = execCmdEx(gitCommand % [parent, nimbleFile])
 
 var versions: HashSet[string]
 
@@ -44,10 +44,13 @@ for line in commits.output.splitLines:
         let start = line.rFind("=")
         if line[start+1..^1].scanf("$s\"$+\"", version) and version notin versions:
           discard execShellCmd(tagCommand % [parent, version, commit, message])
+          echo "Created Version: ", version, ", with message: ", message
           versions.incl version
 
 if startSize != versions.len:
   echo fmt"Created new tags for {versions.len - startSize} versions. Pushing now"
   discard execShellCmd(pushCommand % parent)
+else:
+  echo "No new versions found."
 
 

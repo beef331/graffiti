@@ -7,14 +7,33 @@ const
   pushCommand = "git -C $1 push --tags"
   tagListCommand = "git -C $1 tag"
 
-assert paramCount() == 1
+assert paramCount() in [1, 2]
 
 let
   path = paramStr(1)
+
+if paramCount() == 2:
+  let newVersion = paramStr(2)
+  if not newVersion.scantuple("$i.$i.$i")[0]:
+    raiseAssert("Incorrect new version number")
+  let 
+    nimble = readFile(path)
+    theFile = open(path, fmWrite)
+
+  for line in nimble.splitLines:
+    if line.scanTuple("version$s=")[0]:
+      theFile.writeLine "version = \"", newVersion, "\""
+    else:
+      theFile.writeLine(line)
+  theFile.close()
+  discard execShellCmd(fmt"git add {path}")
+  discard execShellCmd(fmt"""git commit -m "Bump Nimble to {newVersion}"""")
+  discard execShellCmd("git push")
+
+let
   parent = path.parentDir()
   nimbleFile = path.splitPath.tail
   commits = execCmdEx(gitCommand % [parent, nimbleFile])
-
 var versions: HashSet[string]
 
 for line in execCmdEx(tagListCommand % parent).output.splitLines:

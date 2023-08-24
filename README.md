@@ -11,6 +11,11 @@ nimble install https://github.com/beef331/graffiti.git
 graffiti some_project/some_project.nimble
 ```
 
+```sh
+# It also can manually bump a project.
+graffiti ./some_project.nimble 0.3.2 
+```
+
 If the first commit of the repository includes the nimble file the very first version will not be automatically tagged.
 
 ## Testimonials

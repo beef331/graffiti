@@ -1,4 +1,6 @@
-import std/[osproc, strutils, os, sequtils, algorithm, sets, strscans, strformat]
+import std/[osproc, strutils, os, sequtils, algorithm, sets, strscans, strformat, options]
+import experimental/cmdline
+
 
 const 
   gitCommand = "git -C $1 log --format=\"%H %s\" -- $2"
@@ -7,18 +9,45 @@ const
   pushCommand = "git -C $1 push --tags"
   tagListCommand = "git -C $1 tag"
 
-assert paramCount() in [1, 2]
 
-let
-  path = paramStr(1)
+type Parameters = object
+  nimblePath: string
+  tagVersion: Option[string]
 
-if paramCount() == 2:
-  let newVersion = paramStr(2)
-  if not newVersion.scantuple("$i.$i.$i")[0]:
-    raiseAssert("Incorrect new version number")
+var cli = Parameters.commandBuilder()
+  .name("graffiti")
+  .describe("Does the redundant and tags a nimble file and makes a git tag cause Nimble files are forced to have a version.")
+  .initCli()
+
+cli.positionalBuilder
+  .name("Nimble file")
+  .parser(string, proc(value: string, params: var Parameters): Action =
+    params.nimblePath = value
+  )
+  .describe("The Nimble path for the library you want to tag.")
+  .addTo(cli)
+
+cli.positionalBuilder
+  .name("Version")
+  .optional()
+  .describe("If provided writes this value into the nimble file. Makes a new git tag then pushes. Must be in Major.Minor.Patch form.")
+  .parser(string, (proc(value: string, params: var Parameters): Action =
+    if value.scantuple("$i.$i.$i")[0]:
+      params.tagVersion = some(value) 
+      Continue
+    else:
+      echo "Incorrect new version number"
+      ShowHelp
+  )
+  ).addTo(cli)
+
+let conf = cli.run()
+
+if conf.tagVersion.isSome():
   let 
-    nimble = readFile(path)
-    theFile = open(path, fmWrite)
+    newVersion = conf.tagVersion.get
+    nimble = readFile(conf.nimblePath)
+    theFile = open(conf.nimblePath, fmWrite)
 
   for line in nimble.splitLines:
     if line.scanTuple("version$s=")[0]:
@@ -26,13 +55,14 @@ if paramCount() == 2:
     else:
       theFile.writeLine(line)
   theFile.close()
-  discard execShellCmd(fmt"git add {path}")
+  discard execShellCmd(fmt"git add {conf.nimblePath}")
   discard execShellCmd(fmt"""git commit -m "Bump Nimble to {newVersion}"""")
   discard execShellCmd("git push")
 
+
 let
-  parent = path.parentDir()
-  nimbleFile = path.splitPath.tail
+  parent = conf.nimblePath.parentDir()
+  nimbleFile = conf.nimblePath.splitPath.tail
   commits = execCmdEx(gitCommand % [parent, nimbleFile])
 var versions: HashSet[string]
 

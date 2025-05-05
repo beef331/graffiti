@@ -19,6 +19,8 @@ var cli = Parameters.commandBuilder()
   .describe("Does the redundant and tags a nimble file and makes a git tag cause Nimble files are forced to have a version.")
   .initCli()
 
+cli.addHelpFlag(RootCommand, "help", "h")
+
 cli.positionalBuilder
   .name("Nimble file")
   .parser(string, proc(value: string, params: var Parameters): Action =
@@ -30,7 +32,7 @@ cli.positionalBuilder
 cli.positionalBuilder
   .name("Version")
   .optional()
-  .describe("If provided writes this value into the nimble file. Makes a new git tag then pushes. Must be in Major.Minor.Patch form.")
+  .describe("If provided writes this value into the nimble file.\nMakes a new git tag then pushes.\nMust be in 'Major.Minor.Patch' form.")
   .parser(string, (proc(value: string, params: var Parameters): Action =
     if value.scantuple("$i.$i.$i")[0]:
       params.tagVersion = some(value) 
